@@ -1,0 +1,51 @@
+name: Build Android & iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-mobile:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # ----- Android toolchain -----
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ----- iOS toolchain -----
+      - name: Install Bazelisk
+        run: brew install bazelisk
+
+      - name: Build (Makefile)
+        run: |
+          make submodules
+          make doctor
+          make android
+          make ios
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: dist/android/**
+          if-no-files-found: warn
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-artifacts
+          path: dist/ios/**
+          if-no-files-found: warn
